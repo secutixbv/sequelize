@@ -176,15 +176,14 @@ describe(Support.getTestDialectTeaser('BelongsToMany'), () => {
     });
 
     it('should support schemas', function() {
-      const self = this,
-        AcmeUser = self.sequelize.define('User', {
+      const AcmeUser = this.sequelize.define('User', {
           username: DataTypes.STRING
         }).schema('acme', '_'),
-        AcmeProject = self.sequelize.define('Project', {
+        AcmeProject = this.sequelize.define('Project', {
           title: DataTypes.STRING,
           active: DataTypes.BOOLEAN
         }).schema('acme', '_'),
-        AcmeProjectUsers = self.sequelize.define('ProjectUsers', {
+        AcmeProjectUsers = this.sequelize.define('ProjectUsers', {
           status: DataTypes.STRING,
           data: DataTypes.INTEGER
         }).schema('acme', '_');
@@ -192,8 +191,8 @@ describe(Support.getTestDialectTeaser('BelongsToMany'), () => {
       AcmeUser.belongsToMany(AcmeProject, {through: AcmeProjectUsers});
       AcmeProject.belongsToMany(AcmeUser, {through: AcmeProjectUsers});
 
-      return self.sequelize.dropAllSchemas().then(() => {
-        return self.sequelize.createSchema('acme');
+      return this.sequelize.dropAllSchemas().then(() => {
+        return this.sequelize.createSchema('acme');
       }).then(() => {
         return Promise.all([
           AcmeUser.sync({force: true}),
@@ -216,6 +215,13 @@ describe(Support.getTestDialectTeaser('BelongsToMany'), () => {
         expect(project.ProjectUsers).to.be.ok;
         expect(project.status).not.to.exist;
         expect(project.ProjectUsers.status).to.equal('active');
+        return this.sequelize.dropSchema('acme').then(() => {
+          return this.sequelize.showAllSchemas().then(schemas => {
+            if (dialect === 'postgres' || dialect === 'mssql') {
+              expect(schemas).to.be.empty;
+            }
+          });
+        });
       });
     });
 
@@ -2149,6 +2155,35 @@ describe(Support.getTestDialectTeaser('BelongsToMany'), () => {
       }).spread((ut1, ut2) => {
         expect(ut1).to.have.length(1);
         expect(ut2).to.have.length(1);
+      });
+    });
+
+    it('create custom unique identifier', function() {
+      this.UserTasksLong = this.sequelize.define('table_user_task_with_very_long_name', {
+        id_user_very_long_field: {
+          type: DataTypes.INTEGER(1)
+        },
+        id_task_very_long_field: {
+          type: DataTypes.INTEGER(1)
+        }
+      },
+      { tableName: 'table_user_task_with_very_long_name' }
+      );
+      this.User.belongsToMany(this.Task, {
+        as: 'MyTasks',
+        through: this.UserTasksLong,
+        foreignKey: 'id_user_very_long_field'
+      });
+      this.Task.belongsToMany(this.User, {
+        as: 'MyUsers',
+        through: this.UserTasksLong,
+        foreignKey: 'id_task_very_long_field',
+        uniqueKey: 'custom_user_group_unique'
+      });
+
+      return this.sequelize.sync({ force: true }).then(() => {
+        expect(this.Task.associations.MyUsers.through.model.rawAttributes.id_user_very_long_field.unique).to.equal('custom_user_group_unique');
+        expect(this.Task.associations.MyUsers.through.model.rawAttributes.id_task_very_long_field.unique).to.equal('custom_user_group_unique');
       });
     });
   });

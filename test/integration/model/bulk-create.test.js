@@ -17,7 +17,10 @@ describe(Support.getTestDialectTeaser('Model'), () => {
 
       this.User = this.sequelize.define('User', {
         username: DataTypes.STRING,
-        secretValue: DataTypes.STRING,
+        secretValue: {
+          type: DataTypes.STRING,
+          field: 'secret_value'
+        },
         data: DataTypes.STRING,
         intVal: DataTypes.INTEGER,
         theDate: DataTypes.DATE,
@@ -292,7 +295,12 @@ describe(Support.getTestDialectTeaser('Model'), () => {
           {code: '1234'},
           {name: 'bar', code: '1'}
         ], { validate: true }).catch(errors => {
+          const expectedValidationError = 'Validation len on code failed';
+          const expectedNotNullError = 'notNull Violation: Task.name cannot be null';
+
           expect(errors).to.be.instanceof(Promise.AggregateError);
+          expect(errors.toString()).to.include(expectedValidationError)
+            .and.to.include(expectedNotNullError);
           expect(errors).to.have.length(2);
 
           const e0name0 = errors[0].errors.get('name')[0];
@@ -302,7 +310,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
 
           expect(errors[1].record.name).to.equal('bar');
           expect(errors[1].record.code).to.equal('1');
-          expect(errors[1].errors.get('code')[0].message).to.equal('Validation len on code failed');
+          expect(errors[1].errors.get('code')[0].message).to.equal(expectedValidationError);
         });
       });
     });
@@ -386,7 +394,8 @@ describe(Support.getTestDialectTeaser('Model'), () => {
       });
     });
 
-    if (current.dialect.supports.ignoreDuplicates) {
+    if (current.dialect.supports.ignoreDuplicates ||
+        current.dialect.supports.onConflictDoNothing) {
       it('should support the ignoreDuplicates option', function() {
         const self = this;
         const data = [
@@ -572,7 +581,7 @@ describe(Support.getTestDialectTeaser('Model'), () => {
           return Maya.bulkCreate([M2]);
         }).spread(m => {
 
-        // only attributes are returned, no fields are mixed
+          // only attributes are returned, no fields are mixed
           expect(m.createdAt).to.be.ok;
           expect(m.created_at).to.not.exist;
           expect(m.secret_given).to.not.exist;

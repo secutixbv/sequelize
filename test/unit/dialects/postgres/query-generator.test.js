@@ -137,8 +137,12 @@ if (dialect.match(/^postgres/)) {
 
       createTableQuery: [
         {
-          arguments: ['myTable', {int: 'INTEGER', bigint: 'BIGINT'}],
-          expectation: 'CREATE TABLE IF NOT EXISTS \"myTable\" (\"int\" INTEGER, \"bigint\" BIGINT);'
+          arguments: ['myTable', {int: 'INTEGER', bigint: 'BIGINT', smallint: 'SMALLINT' }],
+          expectation: 'CREATE TABLE IF NOT EXISTS \"myTable\" (\"int\" INTEGER, \"bigint\" BIGINT, \"smallint\" SMALLINT);'
+        },
+        {
+          arguments: ['myTable', {serial: 'INTEGER SERIAL', bigserial: 'BIGINT SERIAL', smallserial: 'SMALLINT SERIAL' }],
+          expectation: 'CREATE TABLE IF NOT EXISTS \"myTable\" (\"serial\"  SERIAL, \"bigserial\"  BIGSERIAL, \"smallserial\"  SMALLSERIAL);'
         },
         {
           arguments: ['myTable', {title: 'VARCHAR(255)', name: 'VARCHAR(255)'}],
@@ -554,8 +558,14 @@ if (dialect.match(/^postgres/)) {
           arguments: ['myTable', {name: 'foo'}],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo');"
         }, {
+          arguments: ['myTable', {name: 'foo'}, {}, { ignoreDuplicates: true }],
+          expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo') ON CONFLICT DO NOTHING;"
+        }, {
           arguments: ['myTable', {name: 'foo'}, {}, { returning: true }],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo') RETURNING *;"
+        }, {
+          arguments: ['myTable', {name: 'foo'}, {}, { ignoreDuplicates: true, returning: true }],
+          expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo') ON CONFLICT DO NOTHING RETURNING *;"
         }, {
           arguments: ['myTable', {name: "foo';DROP TABLE myTable;"}],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'';DROP TABLE myTable;');"
@@ -662,8 +672,14 @@ if (dialect.match(/^postgres/)) {
           arguments: ['myTable', [{name: 'foo'}, {name: 'bar'}]],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'),('bar');"
         }, {
+          arguments: ['myTable', [{name: 'foo'}, {name: 'bar'}], { ignoreDuplicates: true }],
+          expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'),('bar') ON CONFLICT DO NOTHING;"
+        }, {
           arguments: ['myTable', [{name: 'foo'}, {name: 'bar'}], { returning: true }],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'),('bar') RETURNING *;"
+        }, {
+          arguments: ['myTable', [{name: 'foo'}, {name: 'bar'}], { ignoreDuplicates: true, returning: true }],
+          expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'),('bar') ON CONFLICT DO NOTHING RETURNING *;"
         }, {
           arguments: ['myTable', [{name: "foo';DROP TABLE myTable;"}, {name: 'bar'}]],
           expectation: "INSERT INTO \"myTable\" (\"name\") VALUES ('foo'';DROP TABLE myTable;'),('bar');"

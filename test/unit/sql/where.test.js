@@ -1037,7 +1037,7 @@ suite(Support.getTestDialectTeaser('SQL'), () => {
         testsql('newline', {
           $regexp: '^new\nline$'
         }, {
-          mysql: "`newline` REGEXP '^new\nline$'",
+          mysql: "`newline` REGEXP '^new\\nline$'",
           postgres: '"newline" ~ \'^new\nline$\''
         });
       });
@@ -1055,7 +1055,7 @@ suite(Support.getTestDialectTeaser('SQL'), () => {
         testsql('newline', {
           $notRegexp: '^new\nline$'
         }, {
-          mysql: "`newline` NOT REGEXP '^new\nline$'",
+          mysql: "`newline` NOT REGEXP '^new\\nline$'",
           postgres: '"newline" !~ \'^new\nline$\''
         });
       });
@@ -1116,6 +1116,14 @@ suite(Support.getTestDialectTeaser('SQL'), () => {
 
     testsql(current.where(current.fn('lower', current.col('name')), null), {
       default: 'lower([name]) IS NULL'
+    });
+
+    testsql(current.where(current.fn('SUM', current.col('hours')), '>', 0), {
+      default: 'SUM([hours]) > 0'
+    });
+
+    testsql(current.where(current.fn('SUM', current.col('hours')), current.Op.gt, 0), {
+      default: 'SUM([hours]) > 0'
     });
   });
 });
